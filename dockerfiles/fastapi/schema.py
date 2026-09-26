@@ -39,7 +39,6 @@ class Movie(BaseModel):
         }
     }
 
-
 class Prediction(BaseModel):
     """Predicted revenue and the registered model version that produced it."""
 

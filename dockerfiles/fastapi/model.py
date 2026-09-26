@@ -11,12 +11,10 @@ downloaded from MinIO. Configuration comes from environment variables:
 
 import logging
 import os
-
 import mlflow
 import mlflow.sklearn
 import pandas as pd
 from mlflow import MlflowClient
-
 from schema import Movie
 
 logger = logging.getLogger("uvicorn.error")

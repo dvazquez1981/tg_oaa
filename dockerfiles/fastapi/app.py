@@ -1,19 +1,14 @@
 from contextlib import asynccontextmanager
-
 from fastapi import FastAPI, HTTPException
-
 import model
 from schema import Movie, Prediction
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     model.load_model()
     yield
 
-
 app = FastAPI(lifespan=lifespan)
-
 
 @app.get("/")
 def read_root():
