@@ -15,7 +15,7 @@ def read_root():
     return {"message": "Welcome to the Model Service"}
 
 
-@app.post("/predict", response_model=Prediction)
+@app.get("/predict", response_model=Prediction)
 def predict(movie: Movie):
     # The model may have been registered after startup, retry before failing
     if not model.is_loaded() and not model.load_model():
