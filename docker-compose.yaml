@@ -109,7 +109,7 @@ services:
 
   s3:
     restart: always
-    image: quay.io/minio/minio:latest
+    image: pgsty/minio:latest
     container_name: minio
     profiles:
       - mlflow
@@ -134,7 +134,7 @@ services:
       retries: 3
 
   create_s3_buckets:
-    image: quay.io/minio/mc:latest
+    image: pgsty/mc:latest
     container_name: minio_create_bucket
     profiles:
       - mlflow
@@ -176,7 +176,7 @@ services:
       - MLFLOW_S3_ENDPOINT_URL=http://s3:9000
     command: >
       mlflow server 
-      --backend-store-uri postgresql://${PG_USER:-airflow}:${PG_PASSWORD:-airflow}@postgres:5432/mlflow_db
+      --backend-store-uri postgresql+psycopg2://${PG_USER:-airflow}:${PG_PASSWORD:-airflow}@postgres:5432/mlflow_db
       --host 0.0.0.0
       --default-artifact-root s3://${MLFLOW_BUCKET_NAME:-mlflow}/
       --workers 1
