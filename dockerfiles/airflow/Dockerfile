@@ -9,6 +9,13 @@ RUN apt-get update \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
+# Separate virtualenv for the ML tasks (@task.external_python), so their pandas/numpy/sklearn
+# versions match the FastAPI service without touching Airflow's own dependencies
+COPY ml-requirements.txt /ml-requirements.txt
+RUN python -m venv /opt/ml-venv \
+  && /opt/ml-venv/bin/pip install --no-cache-dir --upgrade pip \
+  && /opt/ml-venv/bin/pip install --no-cache-dir -r /ml-requirements.txt
+
 USER airflow
 COPY requirements.txt /requirements.txt
 
