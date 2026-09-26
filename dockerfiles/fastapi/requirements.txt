@@ -1,2 +1,10 @@
 fastapi>=0.116
 uvicorn>=0.27
+# Same versions the model was trained with (see the model's requirements.txt in MLflow)
+mlflow==3.16.1
+boto3
+pandas==3.0.3
+numpy==2.4.3
+scikit-learn==1.8.0
+xgboost==3.2.0
+skops==0.16.0
