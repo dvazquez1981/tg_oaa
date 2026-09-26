@@ -1,0 +1,11 @@
+# Virtualenv for the DAG tasks that touch data or models (/opt/ml-venv, see the Dockerfile).
+# Same versions as dockerfiles/fastapi/requirements.txt, so the API can load the models the DAGs train.
+mlflow==3.16.1
+boto3
+pandas==3.0.3
+numpy==2.4.3
+scikit-learn==1.8.0
+xgboost==3.2.0
+skops==0.16.0
+pyarrow
+kagglehub
