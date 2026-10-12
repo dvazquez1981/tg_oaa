@@ -1,0 +1,33 @@
+[project]
+name = "ceia-operaciones-de-aprendizaje-automatico-i"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+# Mismas versiones que dockerfiles/airflow/requirements-ml.txt y la API
+dependencies = [
+    "boto3==1.43.103",
+    "cloudpickle==3.1.2",
+    "mlflow==3.16.1",
+    "numpy==2.5.3",
+    "optuna==5.0.0",
+    "pandas==3.0.6",
+    "pyarrow==25.0.1",
+    "scikit-learn==1.9.1",
+    "skops==0.16.0",
+    "xgboost==3.4.1",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.3.0",
+    "pip>=26.2.1",
+    "pytest>=8",
+    # Para los tests de la API
+    "fastapi==0.141.1",
+    "httpx2>=2.13",
+]
+
+[tool.pytest.ini_options]
+# Los tests importan utils igual que las tareas de Airflow, y la API igual que en su contenedor
+pythonpath = ["airflow/dags", "dockerfiles/fastapi"]
+testpaths = ["tests"]

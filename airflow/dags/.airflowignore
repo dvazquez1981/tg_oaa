@@ -1,0 +1,3 @@
+# Carpetas sin DAGs: el dag-processor no las recorre (se pueden importar igual)
+utils/
+common/

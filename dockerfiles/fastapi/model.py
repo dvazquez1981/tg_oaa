@@ -1,20 +1,23 @@
 """
-Loads the revenue model from MLflow and runs predictions for the FastAPI endpoints.
+Carga del modelo de recaudación desde MLflow y predicciones para la API.
 
-The model is fetched from the MLflow Model Registry as MODEL_NAME@MODEL_ALIAS; its files are
-downloaded from MinIO. Configuration comes from environment variables:
+La API sirve la versión del Model Registry que tiene el alias MODEL_ALIAS (por defecto
+"champion"). Cuando el DAG retrain_revenue_model promueve una versión nueva, la API la
+detecta y la carga sola: cada MODEL_CHECK_SECONDS consulta a qué versión apunta el alias.
 
-- MLFLOW_TRACKING_URI: MLflow server URL (default: http://mlflow:5000)
-- MODEL_NAME: registered model name (default: revenue_regressor)
-- MODEL_ALIAS: registered model alias (default: champion)
+Configuración por variables de entorno:
+
+- MLFLOW_TRACKING_URI: URL del servidor de MLflow (por defecto http://mlflow:5000)
+- MODEL_NAME: nombre del modelo registrado (por defecto revenue_regressor)
+- MODEL_ALIAS: alias a servir (por defecto champion)
+- MODEL_CHECK_SECONDS: cada cuántos segundos revisar el alias (por defecto 30)
 """
 
 import logging
 import os
-import mlflow
-import mlflow.sklearn
+import threading
+import time
 import pandas as pd
-from mlflow import MlflowClient
 from schema import Movie
 
 logger = logging.getLogger("uvicorn.error")
@@ -22,57 +25,100 @@ logger = logging.getLogger("uvicorn.error")
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
 MODEL_NAME = os.getenv("MODEL_NAME", "revenue_regressor")
 MODEL_ALIAS = os.getenv("MODEL_ALIAS", "champion")
+MODEL_CHECK_SECONDS = float(os.getenv("MODEL_CHECK_SECONDS", "30"))
 
-# Model state, filled by load_model():
-# - model: the fitted sklearn pipeline (TransformedTargetRegressor)
-# - version: registered model version the alias pointed to at load time
-# - columns: input columns expected by the model, in order (from its signature)
-# - idiomas: languages known by the model's OneHotEncoder
-model_state = {"model": None, "version": None, "columns": [], "idiomas": []}
+# Estado del modelo, lo completa refresh():
+# - model: el pipeline de sklearn entrenado (TransformedTargetRegressor)
+# - version: versión del Model Registry que está cargada
+# - columns: columnas de entrada del modelo, en orden
+# - idiomas: idiomas que conoce el OneHotEncoder del modelo
+# - checked_at: cuándo se consultó el alias por última vez (time.monotonic)
+
+model_state = {"model": None, "version": None, "columns": [], "idiomas": [], "checked_at": None}
+
+# Los endpoints corren en varios hilos: el lock evita que dos requests recarguen a la vez
+_lock = threading.Lock()
+
+def _champion_version() -> str:
+    """Consulta en MLflow a qué versión apunta el alias. Falla si el alias no existe."""
+
+    import mlflow
+
+    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+    client = mlflow.MlflowClient()
+    return str(client.get_model_version_by_alias(MODEL_NAME, MODEL_ALIAS).version)
 
 
-def load_model():
-    """Loads MODEL_NAME@MODEL_ALIAS from MLflow into model_state.
+def _load_version(version: str):
+    """Descarga y carga una versión concreta del modelo."""
 
-    Errors are logged instead of raised, so the API can start before the model is registered.
+    import mlflow.sklearn
+
+    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+    return mlflow.sklearn.load_model(f"models:/{MODEL_NAME}/{version}")
+
+
+def _set_model(model, version: str) -> None:
+    """Guarda el modelo en model_state junto con las columnas e idiomas que espera."""
+
+    # Idiomas vistos en el entrenamiento; cualquier otro se trata como "otro"
+    encoder = model.regressor_.named_steps["prep"].named_transformers_["categoricas"]
+    model_state.update(
+        model=model,
+        version=version,
+        columns=list(model.feature_names_in_),
+        idiomas=list(encoder.categories_[0]),
+    )
+
+
+def refresh(force: bool = False) -> bool:
+    """Carga el modelo del alias si cambió de versión o si todavía no hay ninguno.
+
+    Para no consultar MLflow en cada request, solo revisa el alias cada MODEL_CHECK_SECONDS,
+    salvo con force=True. Por eso un champion nuevo puede tardar hasta ese tiempo en
+    servirse. Si MLflow no responde, se sigue usando el modelo que esté cargado.
 
     Returns:
-        True if the model was loaded, False if it's not available.
+        True si hay un modelo cargado al terminar.
     """
-    uri = f"models:/{MODEL_NAME}@{MODEL_ALIAS}"
-    try:
-        mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-        model = mlflow.sklearn.load_model(uri)
-        version = MlflowClient().get_model_version_by_alias(MODEL_NAME, MODEL_ALIAS).version
-        columns = mlflow.models.get_model_info(uri).signature.inputs.input_names()
-    except Exception as e:
-        logger.warning("Model %s not available: %s", uri, e)
-        return False
 
-    # Languages seen in training; anything else is mapped to "otro" like in training
-    encoder = model.regressor_.named_steps["prep"].named_transformers_["categoricas"]
-    model_state.update(model=model, version=version, columns=columns,
-                       idiomas=list(encoder.categories_[0]))
-    logger.info("Loaded model %s version %s", uri, version)
-    return True
+    checked_at = model_state["checked_at"]
+    if not force and checked_at is not None \
+            and time.monotonic() - checked_at < MODEL_CHECK_SECONDS:
+        return is_loaded()
+
+    with _lock:
+        model_state["checked_at"] = time.monotonic()
+        try:
+            version = _champion_version()
+            if version != model_state["version"]:
+                _set_model(_load_version(version), version)
+                logger.info("Modelo %s@%s cargado: versión %s", MODEL_NAME, MODEL_ALIAS, version)
+        except Exception as e:
+            logger.warning("No se pudo actualizar %s@%s: %s", MODEL_NAME, MODEL_ALIAS, e)
+    return is_loaded()
 
 
 def is_loaded() -> bool:
-    """Returns True if load_model() has loaded a model."""
+    """True si hay un modelo cargado."""
+
     return model_state["model"] is not None
 
 
 def build_features(movie: Movie) -> pd.DataFrame:
-    """Builds the model input for a movie, same as construir_features() in notebooks/train.ipynb.
+    """Arma la entrada del modelo para una película.
 
-    Genre flags and known languages come from the loaded model, so they follow retrains.
+    Tiene que dar lo mismo que make_features() en airflow/dags/utils/data.py; lo verifica
+    tests/test_api.py. Los géneros y los idiomas conocidos salen del modelo cargado, así
+    que siguen los cambios de cada reentrenamiento.
 
     Args:
-        movie: Movie from the request.
+        movie: película recibida en el request.
 
     Returns:
-        Single-row DataFrame with the model's input columns, in order.
+        DataFrame de una fila con las columnas del modelo, en orden.
     """
+
     genres = {"gen_" + g.lower().replace(" ", "_") for g in movie.genres}
     idioma = movie.original_language.lower()
     row = {
@@ -92,12 +138,10 @@ def build_features(movie: Movie) -> pd.DataFrame:
 
 
 def predict_revenue(movie: Movie) -> float:
-    """Predicts a movie's revenue. Requires a loaded model (see is_loaded()).
-
-    Args:
-        movie: Movie from the request.
+    """Estima la recaudación de una película. Requiere un modelo cargado (ver is_loaded()).
 
     Returns:
-        Predicted revenue in USD. The pipeline undoes the log transform of the target.
+        Recaudación estimada en USD. El pipeline deshace el log del target.
     """
+    
     return float(model_state["model"].predict(build_features(movie))[0])

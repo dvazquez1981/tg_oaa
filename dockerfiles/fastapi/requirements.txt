@@ -1,10 +1,10 @@
-fastapi>=0.116
-uvicorn>=0.27
-# Same versions the model was trained with (see the model's requirements.txt in MLflow)
-mlflow==3.16.1
-boto3
-pandas==3.0.3
-numpy==2.4.3
-scikit-learn==1.8.0
-xgboost==3.2.0
+fastapi==0.141.1
+uvicorn==0.54.0
+mlflow-skinny==3.16.1
+scikit-learn==1.9.1
+pandas==3.0.6
+numpy==2.5.3
+cloudpickle==3.1.2
+boto3==1.43.103
+xgboost==3.4.1
 skops==0.16.0
