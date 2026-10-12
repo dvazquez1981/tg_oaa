@@ -6,6 +6,7 @@ pandas==3.0.3
 numpy==2.4.3
 scikit-learn==1.8.0
 xgboost==3.2.0
+optuna==4.9.0
 skops==0.16.0
 pyarrow
 kagglehub
