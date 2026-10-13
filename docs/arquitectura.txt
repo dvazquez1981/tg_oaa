@@ -1,0 +1,62 @@
+CEIA-Operaciones_de_aprendisaje_automatico_I/
+│
+├── airflow/                           
+│   ├── dags/
+│   │   ├── .airflowignore
+│   │   ├── etl_tmdb_movies.py
+│   │   ├── retrain_revenue_model.py
+│   │   ├── tune_revenue_model.py
+│   │   ├── common/
+│   │   │   ├── __init__.py
+│   │   │   └── champion_challenger.py
+│   │   └── utils/
+│   │       ├── __init__.py
+│   │       ├── config.py
+│   │       ├── s3.py
+│   │       ├── data.py
+│   │       ├── model.py
+│   │       └── tuning.py
+│   │                       
+│   ├── secrets/
+│   │   ├── variables.yaml            
+│   │   └── connections.yaml
+│   ├── plugins/
+│   ├── config/
+│   └── logs/                         
+│
+├── dockerfiles/                      
+│   ├── airflow/
+│   │   ├── Dockerfile
+│   │   ├── requirements.txt
+│   │   └── requirements-ml.txt
+│   ├── fastapi/
+│   │   ├── Dockerfile
+│   │   ├── requirements.txt
+│   │   ├── app.py
+│   │   ├── model.py
+│   │   └── schema.py
+│   ├── mlflow/
+│   │   ├── Dockerfile               
+│   │   └── requirements.txt
+│   └── postgres/
+│       └── Dockerfile
+│
+├── notebooks/                       
+│   ├── 00_EDA.ipynb
+│   └── 01_TRAIN.ipynb
+│
+├── tests/
+│   ├── test_api.py
+│   ├── test_data.py
+│   ├── test_model.py
+│   └── test_tuning.py
+│
+├── docs/  
+│   └── arquitectura.txt
+│
+├── pyproject.toml                    
+├── uv.lock                         
+├── docker-compose.yaml               
+├── .env
+├── .gitignore
+└── README.md

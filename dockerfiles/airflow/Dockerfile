@@ -1,5 +1,4 @@
 FROM apache/airflow:3.0.2
-COPY requirements.txt /requirements.txt
 
 USER root
 RUN apt-get update \
@@ -9,12 +8,13 @@ RUN apt-get update \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-# Separate virtualenv for the ML tasks (@task.external_python), so their pandas/numpy/sklearn
-# versions match the FastAPI service without touching Airflow's own dependencies
-COPY ml-requirements.txt /ml-requirements.txt
+# Virtualenv aparte para las tareas de ML (@task.external_python en los DAGs).
+# Tiene las mismas versiones que la API, así los modelos que entrenan los DAGs se pueden
+# cargar en FastAPI, sin mezclarse con las dependencias del propio Airflow.
+COPY requirements-ml.txt /requirements-ml.txt
 RUN python -m venv /opt/ml-venv \
   && /opt/ml-venv/bin/pip install --no-cache-dir --upgrade pip \
-  && /opt/ml-venv/bin/pip install --no-cache-dir -r /ml-requirements.txt
+  && /opt/ml-venv/bin/pip install --no-cache-dir -r /requirements-ml.txt
 
 USER airflow
 COPY requirements.txt /requirements.txt

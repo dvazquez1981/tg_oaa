@@ -1,0 +1,15 @@
+# Virtualenv de las tareas de ML (/opt/ml-venv, ver el Dockerfile).
+# Mismas versiones que dockerfiles/fastapi/requirements.txt: la API tiene que poder
+# cargar los modelos que entrenan los DAGs.
+
+mlflow-skinny==3.16.1
+scikit-learn==1.9.1
+pandas==3.0.6
+numpy==2.5.3
+cloudpickle==3.1.2
+boto3==1.43.103
+xgboost==3.4.1
+skops==0.16.0
+optuna==5.0.0
+pyarrow==25.0.1
+kagglehub==1.0.2

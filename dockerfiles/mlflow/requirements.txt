@@ -1,9 +1,3 @@
-psycopg2-binary
-boto3
-cryptography
-pymysql
-pandas
-numpy
-matplotlib
-seaborn
-scikit-learn
+mlflow==3.16.1         
+psycopg2-binary         
+boto3==1.43.103        
