@@ -320,6 +320,7 @@ Si un dato no cumple la validación, la API responde **422** indicando qué camp
 Se maneja con [uv](https://docs.astral.sh/uv/). Las librerías del modelo tienen **las mismas versiones exactas** que los contenedores, así un modelo entrenado en un lado se puede cargar en el otro.
 
 ```bash
+brew install libomp  # solo en macOS: XGBoost necesita el runtime de OpenMP
 uv sync
 uv run python -m ipykernel install --user --name ceia-mlops --display-name "ceia-mlops"
 ```
