@@ -1,0 +1,8 @@
+- Revert "fix: moved from post to get REST method" (05ad137)
+- feat: added ETL and retrain DAGs (cea0f83)
+- refactor: added hiperparameter lookup using Optuna (b3763e8)
+- Pipeline completo: tuning en DAG aparte, arranque automático, API mejorada, tests y README (aa3ba13)
+- fix: on mac `libomp` package is required to run tests (e70c4e7)
+- fix: correct typos and broken notebook link (a27ebba)
+- doc: added images to README (cfc22ac)
+- refactor: moved images into folder (ec35300)
