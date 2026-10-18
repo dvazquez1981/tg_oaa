@@ -94,9 +94,9 @@ El detalle de cuántas películas descarta cada filtro queda en el log de la tar
 
 ### Modelo
 
-Un **XGBoost** dentro de un pipeline de scikit-learn (`TransformedTargetRegressor`) que entrena sobre `log(1 + revenue)` y deshace el logaritmo al predecir, así que las predicciones salen directamente en dólares. El target es muy asimétrico (pocas películas recaudan muchísimo), y trabajar en escala logarítmica estabiliza el entrenamiento.
+Un XGBoost dentro de un pipeline de scikit-learn (`TransformedTargetRegressor`) que entrena sobre `log(1 + revenue)` y deshace el logaritmo al predecir, así que las predicciones salen directamente en dólares. El target es muy asimétrico (pocas películas recaudan muchísimo), y trabajar en escala logarítmica estabiliza el entrenamiento.
 
-XGBoost fue el mejor modelo en la comparación del EDA, contra un baseline, Ridge, KNN, SVR, árbol de decisión y Random Forest. Sus hiperparámetros se buscan con **Optuna** y se elige el modelo por **MAE** (error absoluto medio, en dólares).
+XGBoost fue el mejor modelo en la comparación del EDA, contra un baseline, Ridge, KNN, SVR, árbol de decisión y Random Forest. Sus hiperparámetros se buscan con [Optuna](https://optuna.org/) y se elige el modelo por MAE (error absoluto medio) en dólares.
 
 ---
 
@@ -160,7 +160,11 @@ etl_tmdb_movies ──(asset s3://data/final/tmdb)──► retrain_revenue_mode
 | `retrain_revenue_model` | Solo, cada vez que termina el ETL | Si hay champion, reentrena con sus hiperparámetros. Si no, dispara la búsqueda. |
 | `tune_revenue_model` | Cuando no hay champion, o a mano | Busca hiperparámetros con Optuna y entrena con los mejores. |
 
-Los tres DAGs arrancan **activos** (`is_paused_upon_creation=False`), así el sistema funciona sin tocar nada. Cualquier DAG nuevo que se agregue arranca pausado, por la configuración general del `docker-compose.yaml`.
+La primera vez que se levanta la infraestructure completa los tres DAGs arrancan activos (`is_paused_upon_creation=False`), así el sistema funciona sin tocar nada. 
+
+Cualquier DAG nuevo que se agregue arranca pausado, por la configuración general del `docker-compose.yaml`.
+
+![DAGs](DAGs.png)
 
 ### `etl_tmdb_movies`
 
@@ -172,6 +176,8 @@ Los tres DAGs arrancan **activos** (`is_paused_upon_creation=False`), así el si
 | `split_dataset` | Separa train/test (parámetro `test_size`, por defecto 0.2), registra la corrida en MLflow y **actualiza el asset** que dispara el reentrenamiento. | `s3://data/final/train/` y `s3://data/final/test/` |
 
 Las tareas se pasan entre sí **rutas de S3**, no datos: los datos viajan por el Data Lake y Airflow (XCom) solo transporta las direcciones.
+
+![Data](data.png)
 
 ### `retrain_revenue_model`
 
@@ -218,11 +224,13 @@ En http://localhost:5001:
 
 **Model Registry** (en la barra izquierda, *Model registry*): el modelo `revenue_regressor` con todas sus versiones. La que tiene el alias **`@champion`** es la que está en producción. Las versiones descartadas quedan registradas sin alias, como historial.
 
+![Model Registry](model_registry.png)
+
 ---
 
 ## API del modelo
 
-Documentación interactiva en http://localhost:8800/docs, con un ejemplo listo para probar con **Try it out**.
+Documentación interactiva en http://localhost:8800/docs, con un ejemplo listo para probar con `Try it out`.
 
 | Endpoint | Qué hace |
 |---|---|
@@ -360,6 +368,8 @@ Prueban con datos sintéticos, en segundos y sin levantar los servicios:
 | `test_tuning.py` | La búsqueda de hiperparámetros: registra cada intento, es reproducible y sus resultados sirven para entrenar. |
 | `test_api.py` | Los endpoints, las validaciones, la recarga del champion, el caso de MLflow caído, y que la API arme las features **igual que el ETL**. |
 
+![Tests](tests.png)
+
 ---
 
 ## Operación del sistema
@@ -371,6 +381,8 @@ Ejecutar `etl_tmdb_movies` desde ▶ *Trigger* en Airflow. Al terminar dispara s
 ### Volver a buscar hiperparámetros
 
 Ejecutar `tune_revenue_model` desde ▶ *Trigger*. En el formulario se pueden cambiar `n_trials` (por ejemplo, 150, como en la notebook) y `cv_folds`.
+
+![tune_revenue_model](tune_revenue_model.png)
 
 ### Ver logs
 
