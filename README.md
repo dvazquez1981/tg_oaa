@@ -164,7 +164,7 @@ La primera vez que se levanta la infraestructure completa los tres DAGs arrancan
 
 Cualquier DAG nuevo que se agregue arranca pausado, por la configuración general del `docker-compose.yaml`.
 
-![DAGs](DAGs.png)
+![DAGs](images/DAGs.png)
 
 ### `etl_tmdb_movies`
 
@@ -177,7 +177,7 @@ Cualquier DAG nuevo que se agregue arranca pausado, por la configuración genera
 
 Las tareas se pasan entre sí **rutas de S3**, no datos: los datos viajan por el Data Lake y Airflow (XCom) solo transporta las direcciones.
 
-![Data](data.png)
+![Data](images/data.png)
 
 ### `retrain_revenue_model`
 
@@ -224,7 +224,7 @@ En http://localhost:5001:
 
 **Model Registry** (en la barra izquierda, *Model registry*): el modelo `revenue_regressor` con todas sus versiones. La que tiene el alias **`@champion`** es la que está en producción. Las versiones descartadas quedan registradas sin alias, como historial.
 
-![Model Registry](model_registry.png)
+![Model Registry](images/model_registry.png)
 
 ---
 
@@ -368,7 +368,7 @@ Prueban con datos sintéticos, en segundos y sin levantar los servicios:
 | `test_tuning.py` | La búsqueda de hiperparámetros: registra cada intento, es reproducible y sus resultados sirven para entrenar. |
 | `test_api.py` | Los endpoints, las validaciones, la recarga del champion, el caso de MLflow caído, y que la API arme las features **igual que el ETL**. |
 
-![Tests](tests.png)
+![Tests](images/tests.png)
 
 ---
 
@@ -382,7 +382,7 @@ Ejecutar `etl_tmdb_movies` desde ▶ *Trigger* en Airflow. Al terminar dispara s
 
 Ejecutar `tune_revenue_model` desde ▶ *Trigger*. En el formulario se pueden cambiar `n_trials` (por ejemplo, 150, como en la notebook) y `cv_folds`.
 
-![tune_revenue_model](tune_revenue_model.png)
+![tune_revenue_model](images/tune_revenue_model.png)
 
 ### Ver logs
 
