@@ -232,6 +232,8 @@ En http://localhost:5001:
 
 Documentación interactiva en http://localhost:8800/docs, con un ejemplo listo para probar con `Try it out`.
 
+![API](images/API.png)
+
 | Endpoint | Qué hace |
 |---|---|
 | `POST /predict` | Recibe los datos de una película y devuelve la recaudación estimada en USD y la versión del modelo que la calculó. |
